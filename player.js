@@ -114,12 +114,19 @@ nextBtn.addEventListener("click", () => {
 });
 
 if ('mediaSession' in navigator) {
-  navigator.mediaSession.setActionHandler('previoustrack', () => {
-    loadAudioByIndex(state.index - 1);
+  const skipTime = 15; // 15 seconds
+
+  navigator.mediaSession.setActionHandler('seekbackward', () => {
+    audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+    saveState(state.index, audio.currentTime);
   });
 
-  navigator.mediaSession.setActionHandler('nexttrack', () => {
-    loadAudioByIndex(state.index + 1);
+  navigator.mediaSession.setActionHandler('seekforward', () => {
+    audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
+    saveState(state.index, audio.currentTime);
   });
+
+  navigator.mediaSession.setActionHandler('previoustrack', null);
+  navigator.mediaSession.setActionHandler('nexttrack', null);
 }
 
