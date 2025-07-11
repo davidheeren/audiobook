@@ -116,6 +116,14 @@ nextBtn.addEventListener("click", () => {
 if ('mediaSession' in navigator) {
   const skipTime = 15; // 15 seconds
 
+  navigator.mediaSession.setActionHandler('previoustrack', () => {
+    audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+  });
+
+  navigator.mediaSession.setActionHandler('nexttrack', () => {
+    audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
+  });
+
   navigator.mediaSession.setActionHandler('seekbackward', () => {
     audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
     saveState(state.index, audio.currentTime);
@@ -126,7 +134,10 @@ if ('mediaSession' in navigator) {
     saveState(state.index, audio.currentTime);
   });
 
-  navigator.mediaSession.setActionHandler('previoustrack', null);
-  navigator.mediaSession.setActionHandler('nexttrack', null);
+  navigator.mediaSession.setActionHandler('seekto', (details) => {
+    if (details.fastSeek) return;
+    audio.currentTime = details.seekTime;
+    saveState(state.index, audio.currentTime);
+  });
 }
 
