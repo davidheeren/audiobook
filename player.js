@@ -64,7 +64,58 @@ function loadAudio(index, time) {
   audio.play().catch(() => {}); // Autoplay might be blocked initially
 }
 
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
 let state = loadState();
+
+function loadAudioByIndex(newIndex) {
+  if (newIndex < 0) newIndex = 0;
+  if (newIndex >= urls.length) newIndex = urls.length - 1;
+  state.index = newIndex;
+  state.time = 0;
+  loadAudio(state.index, 0);
+  saveState(state.index, 0);
+}
+
+prevBtn.addEventListener("click", () => {
+  loadAudioByIndex(state.index - 1);
+});
+
+nextBtn.addEventListener("click", () => {
+  loadAudioByIndex(state.index + 1);
+});
+
+if ('mediaSession' in navigator) {
+  const skipTime = 15; // 15 seconds
+
+  navigator.mediaSession.setActionHandler('previoustrack', () => {
+    audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+    saveState(state.index, audio.currentTime);
+  });
+
+  navigator.mediaSession.setActionHandler('nexttrack', () => {
+    audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
+    saveState(state.index, audio.currentTime);
+  });
+
+  navigator.mediaSession.setActionHandler('seekbackward', () => {
+    audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+    saveState(state.index, audio.currentTime);
+  });
+
+  navigator.mediaSession.setActionHandler('seekforward', () => {
+    audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
+    saveState(state.index, audio.currentTime);
+  });
+
+  navigator.mediaSession.setActionHandler('seekto', (details) => {
+    if (details.fastSeek) return;
+    audio.currentTime = details.seekTime;
+    saveState(state.index, audio.currentTime);
+  });
+}
+
 loadAudio(state.index, state.time);
 
 let saveTimer = null;
@@ -92,52 +143,4 @@ audio.addEventListener("ended", () => {
   loadAudio(state.index, 0);
   saveState(state.index, 0);
 });
-
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-
-function loadAudioByIndex(newIndex) {
-  if (newIndex < 0) newIndex = 0;
-  if (newIndex >= urls.length) newIndex = urls.length - 1;
-  state.index = newIndex;
-  state.time = 0;
-  loadAudio(state.index, 0);
-  saveState(state.index, 0);
-}
-
-prevBtn.addEventListener("click", () => {
-  loadAudioByIndex(state.index - 1);
-});
-
-nextBtn.addEventListener("click", () => {
-  loadAudioByIndex(state.index + 1);
-});
-
-if ('mediaSession' in navigator) {
-  const skipTime = 15; // 15 seconds
-
-  navigator.mediaSession.setActionHandler('previoustrack', () => {
-    audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
-  });
-
-  navigator.mediaSession.setActionHandler('nexttrack', () => {
-    audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
-  });
-
-  navigator.mediaSession.setActionHandler('seekbackward', () => {
-    audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
-    saveState(state.index, audio.currentTime);
-  });
-
-  navigator.mediaSession.setActionHandler('seekforward', () => {
-    audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
-    saveState(state.index, audio.currentTime);
-  });
-
-  navigator.mediaSession.setActionHandler('seekto', (details) => {
-    if (details.fastSeek) return;
-    audio.currentTime = details.seekTime;
-    saveState(state.index, audio.currentTime);
-  });
-}
 
