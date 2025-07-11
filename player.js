@@ -39,8 +39,28 @@ function updateTrackIndicator(index) {
 
 function loadAudio(index, time) {
   audio.src = urls[index];
-  audio.currentTime = time;
   updateTrackIndicator(index);
+
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: `Chapter ${index + 1}`,
+      artist: 'Robert Jordan',
+      album: 'The Eye of the World',
+    });
+  }
+
+  const setTime = () => {
+    audio.currentTime = time;
+  };
+
+  // If metadata is already loaded, set time immediately.
+  // Otherwise, wait for the event.
+  if (audio.readyState >= 1) { // HAVE_METADATA
+    setTime();
+  } else {
+    audio.addEventListener('loadedmetadata', setTime, { once: true });
+  }
+
   audio.play().catch(() => {}); // Autoplay might be blocked initially
 }
 
@@ -56,6 +76,10 @@ audio.addEventListener("timeupdate", () => {
       saveTimer = null;
     }, 1000);
   }
+});
+
+audio.addEventListener("seeked", () => {
+  saveState(state.index, audio.currentTime);
 });
 
 audio.addEventListener("ended", () => {
@@ -88,4 +112,14 @@ prevBtn.addEventListener("click", () => {
 nextBtn.addEventListener("click", () => {
   loadAudioByIndex(state.index + 1);
 });
+
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('previoustrack', () => {
+    loadAudioByIndex(state.index - 1);
+  });
+
+  navigator.mediaSession.setActionHandler('nexttrack', () => {
+    loadAudioByIndex(state.index + 1);
+  });
+}
 
